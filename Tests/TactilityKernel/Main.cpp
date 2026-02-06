@@ -3,12 +3,18 @@
 #include <cassert>
 
 #include <tactility/freertos/task.h>
+#include <tactility/kernel_init.h>
 
 typedef struct {
     int argc;
     char** argv;
     int result;
 } TestTaskData;
+
+extern "C" {
+// From the relevant platform
+extern struct Module platform_module;
+}
 
 void test_task(void* parameter) {
     auto* data = (TestTaskData*)parameter;
@@ -19,6 +25,8 @@ void test_task(void* parameter) {
 
     // overrides
     context.setOption("no-breaks", true); // don't break in the debugger when assertions fail
+
+    check(kernel_init(&platform_module, nullptr, nullptr) == ERROR_NONE);
 
     data->result = context.run();
 
@@ -49,9 +57,3 @@ int main(int argc, char** argv) {
     return data.result;
 }
 
-extern "C" {
-    // Required for FreeRTOS
-    void vAssertCalled(unsigned long line, const char* const file) {
-        __assert_fail("assert failed", file, line, "");
-    }
-}

@@ -9,9 +9,9 @@
 #include <tactility/drivers/gpio.h>
 #include <tactility/drivers/gpio_controller.h>
 
-#define TAG LOG_TAG(esp32_gpio)
+#define TAG "esp32_gpio"
 
-#define GET_CONFIG(device) ((struct Esp32GpioConfig*)device->internal.driver_data)
+#define GET_CONFIG(device) ((struct Esp32GpioConfig*)device->config)
 
 extern "C" {
 
@@ -118,10 +118,10 @@ extern struct Module platform_module;
 Driver esp32_gpio_driver = {
     .name = "esp32_gpio",
     .compatible = (const char*[]) { "espressif,esp32-gpio", nullptr },
-    .startDevice = start,
-    .stopDevice = stop,
+    .start_device = start,
+    .stop_device = stop,
     .api =  (void*)&esp32_gpio_api,
-    .deviceType = &GPIO_CONTROLLER_TYPE,
+    .device_type = &GPIO_CONTROLLER_TYPE,
     .owner = &platform_module,
     .driver_private = nullptr
 };

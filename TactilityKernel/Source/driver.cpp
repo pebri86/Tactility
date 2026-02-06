@@ -10,7 +10,7 @@
 #include <tactility/error.h>
 #include <tactility/log.h>
 
-#define TAG LOG_TAG(driver)
+#define TAG "driver"
 
 struct DriverPrivate {
     Mutex mutex { 0 };
@@ -30,21 +30,11 @@ struct DriverLedger {
     std::vector<Driver*> drivers;
     Mutex mutex { 0 };
 
-    DriverLedger() {
-        mutex_construct(&mutex);
-    }
+    DriverLedger() { mutex_construct(&mutex); }
+    ~DriverLedger() { mutex_destruct(&mutex); }
 
-    ~DriverLedger() {
-        mutex_destruct(&mutex);
-    }
-
-    void lock() {
-        mutex_lock(&mutex);
-    }
-
-    void unlock() {
-        mutex_unlock(&mutex);
-    }
+    void lock() { mutex_lock(&mutex); }
+    void unlock() { mutex_unlock(&mutex); }
 };
 
 static DriverLedger& get_ledger() {
@@ -58,28 +48,6 @@ static DriverLedger& get_ledger() {
 #define driver_lock(driver) mutex_lock(&get_driver_private(driver)->mutex);
 #define driver_unlock(driver) mutex_unlock(&get_driver_private(driver)->mutex);
 
-static void driver_add(Driver* driver) {
-    LOG_I(TAG, "add %s", driver->name);
-    ledger.lock();
-    ledger.drivers.push_back(driver);
-    ledger.unlock();
-}
-
-static error_t driver_remove(Driver* driver) {
-    LOG_I(TAG, "remove %s", driver->name);
-
-    ledger.lock();
-    const auto iterator = std::ranges::find(ledger.drivers, driver);
-    if (iterator == ledger.drivers.end()) {
-        ledger.unlock();
-        return ERROR_NOT_FOUND;
-    }
-    ledger.drivers.erase(iterator);
-    ledger.unlock();
-
-    return ERROR_NONE;
-}
-
 extern "C" {
 
 error_t driver_construct(Driver* driver) {
@@ -87,7 +55,6 @@ error_t driver_construct(Driver* driver) {
     if (driver->driver_private == nullptr) {
         return ERROR_OUT_OF_MEMORY;
     }
-    driver_add(driver);
     return ERROR_NONE;
 }
 
@@ -104,14 +71,47 @@ error_t driver_destruct(Driver* driver) {
     }
     get_driver_private(driver)->destroying = true;
 
-    if (driver_remove(driver) != ERROR_NONE) {
-        LOG_W(TAG, "Failed to remove driver from ledger: %s", driver->name);
-    }
-
     driver_unlock(driver);
     delete get_driver_private(driver);
     driver->driver_private = nullptr;
 
+    return ERROR_NONE;
+}
+
+error_t driver_add(Driver* driver) {
+    LOG_I(TAG, "add %s", driver->name);
+    ledger.lock();
+    ledger.drivers.push_back(driver);
+    ledger.unlock();
+    return ERROR_NONE;
+}
+
+error_t driver_remove(Driver* driver) {
+    LOG_I(TAG, "remove %s", driver->name);
+
+    if (driver->owner == nullptr) return ERROR_NOT_ALLOWED;
+
+    ledger.lock();
+    const auto iterator = std::ranges::find(ledger.drivers, driver);
+    if (iterator == ledger.drivers.end()) {
+        ledger.unlock();
+        return ERROR_NOT_FOUND;
+    }
+    ledger.drivers.erase(iterator);
+    ledger.unlock();
+
+    return ERROR_NONE;
+}
+
+error_t driver_construct_add(struct Driver* driver) {
+    if (driver_construct(driver) != ERROR_NONE) return ERROR_RESOURCE;
+    if (driver_add(driver) != ERROR_NONE) return ERROR_RESOURCE;
+    return ERROR_NONE;
+}
+
+error_t driver_remove_destruct(struct Driver* driver) {
+    if (driver_remove(driver) != ERROR_NONE) return ERROR_RESOURCE;
+    if (driver_destruct(driver) != ERROR_NONE) return ERROR_RESOURCE;
     return ERROR_NONE;
 }
 
@@ -151,8 +151,8 @@ error_t driver_bind(Driver* driver, Device* device) {
         goto error;
     }
 
-    if (driver->startDevice != nullptr) {
-        error = driver->startDevice(device);
+    if (driver->start_device != nullptr) {
+        error = driver->start_device(device);
         if (error != ERROR_NONE) {
             goto error;
         }
@@ -179,8 +179,8 @@ error_t driver_unbind(Driver* driver, Device* device) {
         goto error;
     }
 
-    if (driver->stopDevice != nullptr) {
-        error = driver->stopDevice(device);
+    if (driver->stop_device != nullptr) {
+        error = driver->stop_device(device);
         if (error != ERROR_NONE) {
             goto error;
         }
@@ -197,6 +197,10 @@ error:
 
     driver_unlock(driver);
     return error;
+}
+
+const struct DeviceType* driver_get_device_type(struct Driver* driver) {
+    return driver->device_type;
 }
 
 } // extern "C"

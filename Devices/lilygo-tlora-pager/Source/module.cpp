@@ -9,14 +9,14 @@ extern Driver tlora_pager_driver;
 static error_t start() {
     /* We crash when construct fails, because if a single driver fails to construct,
      * there is no guarantee that the previously constructed drivers can be destroyed */
-    check(driver_construct(&tlora_pager_driver) == ERROR_NONE);
+    check(driver_construct_add(&tlora_pager_driver) == ERROR_NONE);
     return ERROR_NONE;
 }
 
 static error_t stop() {
     /* We crash when destruct fails, because if a single driver fails to destruct,
      * there is no guarantee that the previously destroyed drivers can be recovered */
-    check(driver_destruct(&tlora_pager_driver) == ERROR_NONE);
+    check(driver_remove_destruct(&tlora_pager_driver) == ERROR_NONE);
     return ERROR_NONE;
 }
 
@@ -24,7 +24,8 @@ static error_t stop() {
 struct Module device_module = {
     .name = "lilygo-tlora-pager",
     .start = start,
-    .stop = stop
+    .stop = stop,
+    .symbols = nullptr
 };
 
 }

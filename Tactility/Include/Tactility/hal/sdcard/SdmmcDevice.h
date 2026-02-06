@@ -5,7 +5,7 @@
 #include "SdCardDevice.h"
 
 #include <Tactility/RecursiveMutex.h>
-#include <Tactility/hal/Device.h>
+#include <tactility/hal/Device.h>
 #include <Tactility/hal/spi/Spi.h>
 #include <sd_protocol_types.h>
 #include <soc/gpio_num.h>
@@ -85,7 +85,8 @@ public:
 
     State getState(TickType_t timeout) const override;
 
-    sdmmc_card_t* _Nullable getCard() { return card; }
+    /** return card when mounted, otherwise return nullptr */
+    sdmmc_card_t* getCard() { return card; }
 };
 
 }

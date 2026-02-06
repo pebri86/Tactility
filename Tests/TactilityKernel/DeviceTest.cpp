@@ -41,7 +41,7 @@ TEST_CASE("device_add should add the device to the list of all devices") {
 
     // Gather all devices
     std::vector<Device*> devices;
-    for_each_device(&devices, [](auto* device, auto* context) {
+    device_for_each(&devices, [](auto* device, auto* context) {
         auto* devices_ptr = static_cast<std::vector<Device*>*>(context);
         devices_ptr->push_back(device);
         return true;
@@ -71,7 +71,7 @@ TEST_CASE("device_add should add the device to its parent") {
 
     // Gather all child devices
     std::vector<Device*> children;
-    for_each_device_child(&parent, &children, [](auto* child_device, auto* context) {
+    device_for_each_child(&parent, &children, [](auto* child_device, auto* context) {
         auto* children_ptr = (std::vector<Device*>*)context;
         children_ptr->push_back(child_device);
         return true;
@@ -107,7 +107,7 @@ TEST_CASE("device_remove should remove it from the list of all devices") {
 
     // Gather all devices
     std::vector<Device*> devices;
-    for_each_device(&devices, [](auto* device, auto* context) {
+    device_for_each(&devices, [](auto* device, auto* context) {
         auto* devices_ptr = (std::vector<Device*>*)context;
         devices_ptr->push_back(device);
         return true;
@@ -136,7 +136,7 @@ TEST_CASE("device_remove should remove the device from its parent") {
 
     // Gather all child devices
     std::vector<Device*> children;
-    for_each_device_child(&parent, &children, [](auto* child_device, auto* context) {
+    device_for_each_child(&parent, &children, [](auto* child_device, auto* context) {
         auto* children_ptr = (std::vector<Device*>*)context;
         children_ptr->push_back(child_device);
         return true;
@@ -167,17 +167,17 @@ TEST_CASE("device_is_ready should return true only when it is started") {
     Driver driver = {
         .name = "test_driver",
         .compatible = compatible,
-        .startDevice = nullptr,
-        .stopDevice = nullptr,
+        .start_device = nullptr,
+        .stop_device = nullptr,
         .api = nullptr,
-        .deviceType = nullptr,
+        .device_type = nullptr,
         .owner = &module,
         .driver_private = nullptr
     };
 
     Device device = { 0 };
 
-    CHECK_EQ(driver_construct(&driver), ERROR_NONE);
+    CHECK_EQ(driver_construct_add(&driver), ERROR_NONE);
     CHECK_EQ(device_construct(&device), ERROR_NONE);
 
     CHECK_EQ(device.internal.state.started, false);
@@ -192,6 +192,6 @@ TEST_CASE("device_is_ready should return true only when it is started") {
     CHECK_EQ(device_remove(&device), ERROR_NONE);
     CHECK_EQ(device.internal.state.started, false);
 
-    CHECK_EQ(driver_destruct(&driver), ERROR_NONE);
     CHECK_EQ(device_destruct(&device), ERROR_NONE);
+    CHECK_EQ(driver_remove_destruct(&driver), ERROR_NONE);
 }

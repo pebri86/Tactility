@@ -16,7 +16,7 @@ namespace tt::app::wifimanage {
 
 static const auto LOGGER = Logger("WifiManageView");
 
-std::shared_ptr<WifiManage> _Nullable optWifiManage();
+std::shared_ptr<WifiManage> optWifiManage();
 
 static uint8_t mapRssiToPercentage(int rssi) {
     auto abs_rssi = std::abs(rssi);
@@ -258,10 +258,12 @@ void View::updateWifiToggle() {
             lv_obj_add_state(enable_switch, LV_STATE_CHECKED);
             break;
         case OnPending:
-            lv_obj_add_state(enable_switch, LV_STATE_CHECKED | LV_STATE_DISABLED);
+            lv_obj_add_state(enable_switch, LV_STATE_CHECKED);
+            lv_obj_add_state(enable_switch, LV_STATE_DISABLED);
             break;
         case Off:
-            lv_obj_remove_state(enable_switch, LV_STATE_CHECKED | LV_STATE_DISABLED);
+            lv_obj_remove_state(enable_switch, LV_STATE_CHECKED);
+            lv_obj_remove_state(enable_switch, LV_STATE_DISABLED);
             break;
         case OffPending:
             lv_obj_remove_state(enable_switch, LV_STATE_CHECKED);

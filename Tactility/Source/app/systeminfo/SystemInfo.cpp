@@ -3,7 +3,7 @@
 #include <Tactility/lvgl/LvglSync.h>
 
 #include <Tactility/Assets.h>
-#include <Tactility/hal/Device.h>
+#include <tactility/hal/Device.h>
 #include <Tactility/Tactility.h>
 #include <Tactility/Timer.h>
 
@@ -274,7 +274,7 @@ extern const AppManifest manifest;
 
 class SystemInfoApp;
 
-static std::shared_ptr<SystemInfoApp> _Nullable optApp() {
+static std::shared_ptr<SystemInfoApp> optApp() {
     auto appContext = getCurrentAppContext();
     if (appContext != nullptr && appContext->getManifest().appId == manifest.appId) {
         return std::static_pointer_cast<SystemInfoApp>(appContext->getApp());

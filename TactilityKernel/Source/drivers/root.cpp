@@ -8,12 +8,11 @@ extern "C" {
 Driver root_driver = {
     .name = "root",
     .compatible = (const char*[]) { "root", nullptr },
-    .startDevice = nullptr,
-    .stopDevice = nullptr,
+    .start_device = nullptr,
+    .stop_device = nullptr,
     .api = nullptr,
-    .deviceType = nullptr,
-    .owner = nullptr,
-    .driver_private = nullptr
+    .device_type = nullptr,
+    .owner = nullptr
 };
 
 }

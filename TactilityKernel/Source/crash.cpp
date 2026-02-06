@@ -1,7 +1,8 @@
+#include <cstdlib>
 #include <tactility/freertos/task.h>
 #include <tactility/log.h>
 
-static const auto* TAG = LOG_TAG(Kernel);
+static const auto* TAG = "Kernel";
 
 static void log_memory_info() {
 #ifdef ESP_PLATFORM
@@ -31,7 +32,7 @@ __attribute__((noreturn)) void __crash(void) {
 #ifdef ESP_PLATFORM
     esp_system_abort("System halted. Connect debugger for more info.");
 #else
-    while (true) { /* Indefinite lock-up */ }
+    exit(1);
 #endif
     __builtin_unreachable();
 }

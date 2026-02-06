@@ -5,56 +5,61 @@
 extern "C" {
 #endif
 
-#define TAG LOG_TAG(kernel)
+#define TAG "kernel"
 
-struct ModuleParent kernel_module_parent = {
-    "kernel",
-    nullptr
-};
+extern const struct ModuleSymbol KERNEL_SYMBOLS[];
 
-static error_t init_kernel_drivers() {
+static error_t start() {
     extern Driver root_driver;
-    if (driver_construct(&root_driver) != ERROR_NONE) return ERROR_RESOURCE;
+    if (driver_construct_add(&root_driver) != ERROR_NONE) return ERROR_RESOURCE;
     return ERROR_NONE;
 }
+
+static error_t stop() {
+    return ERROR_NONE;
+}
+
+struct Module root_module = {
+    .name = "kernel",
+    .start = start,
+    .stop = stop,
+    .symbols = (const struct ModuleSymbol*)KERNEL_SYMBOLS
+};
 
 error_t kernel_init(struct Module* platform_module, struct Module* device_module, struct CompatibleDevice devicetree_devices[]) {
     LOG_I(TAG, "init");
 
-    if (module_parent_construct(&kernel_module_parent) != ERROR_NONE) {
-        LOG_E(TAG, "init failed to create kernel module parent");
+    if (module_construct_add_start(&root_module) != ERROR_NONE) {
+        LOG_E(TAG, "root module init failed");
         return ERROR_RESOURCE;
     }
 
-    if (init_kernel_drivers() != ERROR_NONE) {
-        LOG_E(TAG, "init failed to init kernel drivers");
+    if (module_construct_add_start(platform_module) != ERROR_NONE) {
+        LOG_E(TAG, "platform module init failed");
         return ERROR_RESOURCE;
     }
 
-    module_set_parent(platform_module, &kernel_module_parent);
-    if (module_start(platform_module) != ERROR_NONE) {
-        LOG_E(TAG, "init failed to start platform module");
-        return ERROR_RESOURCE;
-    }
-
-    module_set_parent(device_module, &kernel_module_parent);
-    if (module_start(device_module) != ERROR_NONE) {
-        LOG_E(TAG, "init failed to start device module");
-        return ERROR_RESOURCE;
-    }
-
-    CompatibleDevice* compatible_device = devicetree_devices;
-    while (compatible_device->device != nullptr) {
-        if (device_construct_add_start(compatible_device->device, compatible_device->compatible) != ERROR_NONE) {
-            LOG_E(TAG, "kernel_init failed to construct device: %s (%s)", compatible_device->device->name, compatible_device->compatible);
+    if (device_module != nullptr) {
+        if (module_construct_add_start(device_module) != ERROR_NONE) {
+            LOG_E(TAG, "device module init failed");
             return ERROR_RESOURCE;
         }
-        compatible_device++;
+    }
+
+    if (devicetree_devices) {
+        CompatibleDevice* compatible_device = devicetree_devices;
+        while (compatible_device->device != nullptr) {
+            if (device_construct_add_start(compatible_device->device, compatible_device->compatible) != ERROR_NONE) {
+                LOG_E(TAG, "kernel_init failed to construct device: %s (%s)", compatible_device->device->name, compatible_device->compatible);
+                return ERROR_RESOURCE;
+            }
+            compatible_device++;
+        }
     }
 
     LOG_I(TAG, "init done");
     return ERROR_NONE;
-};
+}
 
 #ifdef __cplusplus
 }

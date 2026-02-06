@@ -5,11 +5,17 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include <tactility/kernel_init.h>
+#include <tactility/hal_device_module.h>
+
 typedef struct {
     int argc;
     char** argv;
     int result;
 } TestTaskData;
+
+// From the relevant platform
+extern "C" struct Module platform_module;
 
 void test_task(void* parameter) {
     auto* data = (TestTaskData*)parameter;
@@ -20,6 +26,8 @@ void test_task(void* parameter) {
 
     // overrides
     context.setOption("no-breaks", true); // don't break in the debugger when assertions fail
+
+    check(kernel_init(&platform_module, &hal_device_module, nullptr) == ERROR_NONE);
 
     data->result = context.run();
 
@@ -46,4 +54,6 @@ int main(int argc, char** argv) {
     assert(task_result == pdPASS);
 
     vTaskStartScheduler();
+
+    return data.result;
 }
